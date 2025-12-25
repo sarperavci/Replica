@@ -14,12 +14,13 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && apk del .build-deps
 
 # copy package source
-COPY src/ ./src/
+COPY replica/ ./replica/
 COPY .env.example .env
 
-ENV PYTHONPATH=/app/src
+# Ensure the app package is importable
+ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
 # Entry point performs validations and starts the server
-ENTRYPOINT ["python", "/app/src/replica/entrypoint.py"]
+ENTRYPOINT ["python", "/app/replica/entrypoint.py"]
