@@ -1,0 +1,12 @@
+# FastAPI
+httpx
+pytest
+pytest-asyncio
+cachetools
+pydantic
+uvicorn
+respx
+mypy
+black
+flake8
+isort
