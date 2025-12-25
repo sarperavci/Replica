@@ -1,9 +1,3 @@
-"""Docker entrypoint and startup diagnostics for Replica.
-
-This script performs runtime validation of required environment variables and
-prints a short diagnostics summary. If validation passes it replaces the current
-process with an `uvicorn` server (execv).
-"""
 from __future__ import annotations
 
 import json

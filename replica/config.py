@@ -19,6 +19,8 @@ class Settings:
     STATIC_EXTENSIONS: List[str]
     CACHE_TTL_STATIC: int
     CACHE_TTL_HTML: int
+    INJECT_JS: str
+    INJECT_JS_FILE: str
 
     def __init__(self) -> None:
         self.TARGET_ORIGIN = os.getenv("TARGET_ORIGIN", "https://example.com")
@@ -47,7 +49,19 @@ class Settings:
 
         self.CACHE_TTL_STATIC = int(os.getenv("CACHE_TTL_STATIC", "86400"))
         self.CACHE_TTL_HTML = int(os.getenv("CACHE_TTL_HTML", "300"))
-
+        # Optional inline JavaScript to inject into HTML responses (string).
+        # If provided, this string will be wrapped in <script>...</script> and
+        # inserted before the closing </body> tag (or appended if no closing tag).
+        self.INJECT_JS = os.getenv("INJECT_JS", "")
+        # Optional path to a JS file to load instead of INJECT_JS variable.
+        self.INJECT_JS_FILE = os.getenv("INJECT_JS_FILE", "")
+        if self.INJECT_JS_FILE:
+            try:
+                with open(self.INJECT_JS_FILE, "r", encoding="utf-8") as fh:
+                    self.INJECT_JS = fh.read()
+            except Exception:
+                # Ignore failures and fall back to env var
+                self.INJECT_JS = os.getenv("INJECT_JS", "")
     @property
     def target_host(self) -> str:
         return urlparse(self.TARGET_ORIGIN).netloc

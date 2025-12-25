@@ -47,3 +47,23 @@ def test_proxy_header_sanitization_mocked():
     assert r.status_code == 200
     assert "X-Forwarded-For" not in captured['headers']
     assert captured['headers'].get('user-agent') == 'test-agent'
+
+
+@respx.mock
+def test_inject_js_when_set(monkeypatch):
+    monkeypatch.setattr(settings, "INJECT_JS", "window.__injected = true;")
+    route = respx.get(f"{TARGET}/inject").respond(200, content="<html><body>page</body></html>", headers={"content-type": "text/html"})
+
+    r = client.get("/inject")
+    assert r.status_code == 200
+    assert "<script>window.__injected = true;</script>" in r.text
+
+
+@respx.mock
+def test_no_inject_when_unset(monkeypatch):
+    monkeypatch.setattr(settings, "INJECT_JS", "")
+    route = respx.get(f"{TARGET}/noinject").respond(200, content="<html><body>page</body></html>", headers={"content-type": "text/html"})
+
+    r = client.get("/noinject")
+    assert r.status_code == 200
+    assert "<script>window.__injected = true;</script>" not in r.text

@@ -1,7 +1,7 @@
-"""Core proxy logic for Replica."""
 from __future__ import annotations
 from typing import Optional
 from urllib.parse import urljoin
+import re
 
 from fastapi import Request, Response
 import httpx
@@ -88,6 +88,14 @@ async def proxy_request(request: Request, path: str) -> Response:
     text = perform_text_replacements(text, settings.REPLACEMENTS, incoming_host)
 
     if "html" in content_type.lower():
+        # Optionally inject inline JS before the closing </body> tag.
+        if getattr(settings, "INJECT_JS", ""):
+            js_snippet = f"<script>{settings.INJECT_JS}</script>"
+            if re.search(r"</body>", text, flags=re.IGNORECASE):
+                text = re.sub(r"</body>", js_snippet + "</body>", text, flags=re.IGNORECASE)
+            else:
+                text = text + js_snippet
+
         resp_headers["cache-control"] = f"public, max-age={settings.CACHE_TTL_HTML}"
         resp_headers["x-cache"] = "MISS"
         body_bytes = text.encode("utf-8")
