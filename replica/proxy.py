@@ -87,6 +87,18 @@ async def proxy_request(request: Request, path: str) -> Response:
     request_headers = dict(request.headers)
     request_headers["host"] = settings.target_host
     request_headers.pop("accept-encoding", None)
+    
+    # Filter out Cloudflare-specific cookies that should not be forwarded
+    if "cookie" in request_headers:
+        cookies = request_headers["cookie"].split("; ")
+        filtered_cookies = [
+            c for c in cookies 
+            if not any(c.startswith(f"{name}=") for name in ["__cf_bm", "_cfuvid", "cf_clearance"])
+        ]
+        if filtered_cookies:
+            request_headers["cookie"] = "; ".join(filtered_cookies)
+        else:
+            request_headers.pop("cookie", None)
 
     # Sanitize headers using the dynamically derived origin/host for this request
     # We provide an origin-like string for header sanitization (scheme://host[:port]).
