@@ -23,4 +23,5 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # Entry point performs validations and starts the server
-ENTRYPOINT ["python", "/app/replica/entrypoint.py"]
+# Run as module to support relative imports
+ENTRYPOINT ["python", "-m", "replica.entrypoint"]
