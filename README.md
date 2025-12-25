@@ -6,12 +6,21 @@
 
 Replica is a lightweight, Python-based reverse proxy. It mirrors content from a target origin, sanitizes headers to keep downstream proxies happy, and handles on-the-fly text replacement. It includes an in-memory TTL cache for static assets and HTML to ensure high performance.
 
+## Live Example
+
+Check out a live mirror of Stack Overflow running on Replica:  
+**[notstackoverflow.hackmap.win](https://notstackoverflow.hackmap.win/)**
+
+This demonstrates Replica's ability to seamlessly proxy and rewrite content from any website while maintaining full functionality.
+
 ## Features
 
 *   **Smart Proxying:** Forward requests to any target origin with minimal overhead.
+*   **TLS Fingerprint Impersonation:** Uses curl-impersonate to match Chrome or Firefox browser fingerprints based on incoming User-Agent, bypassing anti-bot protections.
 *   **In-Memory Caching:** Built-in TTL caching for static files and HTML.
 *   **Header Sanitization:** Automatically cleans headers to prevent conflicts with Cloudflare or other edge proxies.
-*   **Dynamic Content:** Perform regex-based text replacements on the fly.
+*   **Dynamic Content Rewriting:** Automatically rewrites target origin URLs to your proxy origin in HTML/JS/CSS content.
+*   **Custom Text Replacements:** Perform regex-based text replacements on the fly.
 *   **JS Injection:** Easily inject custom JavaScript into the `<body>` of proxied HTML pages.
 
 ## Quick Start (Docker)
@@ -28,6 +37,9 @@ docker run -d \
   --env-file .env \
   --name replica \
   ghcr.io/sarperavci/replica:latest
+
+# or without any extra string replacement rules:
+docker run -d -p 8000:8000 --env TARGET_ORIGIN="https://example.com" --name replica ghcr.io/sarperavci/replica:latest
 ```
 
 ### 2. Build from Source
