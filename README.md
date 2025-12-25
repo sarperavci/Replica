@@ -113,6 +113,11 @@ For active development, use Uvicorn directly to reload on code changes:
 uvicorn replica.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+## Known Issues (to be solved)
+
+- **Google.com mirroring not supported**: Google employs advanced bot detection and requires specific handling that is not currently implemented.
+- **WebSocket connections not supported**: The proxy only handles HTTP/HTTPS requests. Real-time WebSocket connections are not proxied and will fail.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
