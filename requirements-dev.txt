@@ -6,6 +6,7 @@ cachetools
 pydantic
 uvicorn
 respx
+httpx-curl-cffi
 mypy
 black
 flake8

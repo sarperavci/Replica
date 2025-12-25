@@ -30,8 +30,6 @@ def validate_settings(settings: _Settings) -> List[str]:
     if not _is_valid_url(settings.TARGET_ORIGIN):
         errors.append("TARGET_ORIGIN must be a valid http(s) URL")
 
-    if not _is_valid_url(settings.MY_ORIGIN):
-        errors.append("MY_ORIGIN must be a valid http(s) URL")
 
     # Validate REPLACEMENTS if provided in env
     raw = os.getenv("REPLACEMENTS", "")
@@ -64,7 +62,6 @@ def validate_settings(settings: _Settings) -> List[str]:
 def print_diagnostics(settings: _Settings) -> None:
     logger.info("Starting Replica — reverse proxy")
     logger.info("TARGET_ORIGIN=%s", settings.TARGET_ORIGIN)
-    logger.info("MY_ORIGIN=%s", settings.MY_ORIGIN)
     logger.info("REPLACEMENTS=%d rules", len(settings.REPLACEMENTS or []))
     logger.info("STATIC_EXTENSIONS=%s", ",".join(settings.STATIC_EXTENSIONS))
     logger.info("CACHE_TTL_STATIC=%s", os.getenv("CACHE_TTL_STATIC", "86400"))

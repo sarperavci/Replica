@@ -1,4 +1,3 @@
-"""Simple environment/settings loader without strict pydantic dependency."""
 from __future__ import annotations
 from typing import List, Any
 import os
@@ -14,7 +13,6 @@ class Settings:
     """
 
     TARGET_ORIGIN: str
-    MY_ORIGIN: str
     REPLACEMENTS: List[dict]
     STATIC_EXTENSIONS: List[str]
     CACHE_TTL_STATIC: int
@@ -22,16 +20,18 @@ class Settings:
     INJECT_JS: str
     INJECT_JS_FILE: str
 
+    # Default origin used only as an internal fallback when a request does not provide
+    # a Host header. This is not configurable via environment variables anymore.
+    _DEFAULT_ORIGIN = "http://127.0.0.1:8000"
+
     def __init__(self) -> None:
         self.TARGET_ORIGIN = os.getenv("TARGET_ORIGIN", "https://example.com")
-        self.MY_ORIGIN = os.getenv("MY_ORIGIN", "http://127.0.0.1:8000")
 
         raw = os.getenv("REPLACEMENTS", "")
         if raw:
             try:
                 self.REPLACEMENTS = json.loads(raw)
             except Exception:
-                # Fallback: empty list on parse errors
                 self.REPLACEMENTS = []
         else:
             self.REPLACEMENTS = []
@@ -68,7 +68,11 @@ class Settings:
 
     @property
     def my_host(self) -> str:
-        return urlparse(self.MY_ORIGIN).netloc
+        """Return a fallback host (netloc) to use when a request lacks a Host header.
+
+        This uses a hardcoded default origin rather than an environment-provided one.
+        """
+        return urlparse(self._DEFAULT_ORIGIN).netloc
 
 
 # Single settings instance for modules to import

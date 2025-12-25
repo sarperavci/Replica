@@ -50,7 +50,6 @@ Replica is configured entirely via environment variables.
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `TARGET_ORIGIN` | `https://example.com` | The upstream site you want to proxy. |
-| `MY_ORIGIN` | `http://localhost:8000` | The URL where Replica is running (used for rewriting links). |
 | `REPLACEMENTS` | `[]` | JSON string of rules. Use `"to": "MY_HOST"` to dynamically map to your origin. |
 | `CACHE_TTL_STATIC` | (Internal Default) | Time-to-live (seconds) for static files. |
 | `CACHE_TTL_HTML` | (Internal Default) | Time-to-live (seconds) for HTML content. |

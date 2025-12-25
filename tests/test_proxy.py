@@ -67,3 +67,30 @@ def test_no_inject_when_unset(monkeypatch):
     r = client.get("/noinject")
     assert r.status_code == 200
     assert "<script>window.__injected = true;</script>" not in r.text
+
+
+@respx.mock
+def test_proxy_default_target_replacement(monkeypatch):
+    """When REPLACEMENTS is empty, the proxy should still replace occurrences of the target host
+    with the incoming host by default (mandatory behavior)."""
+    monkeypatch.setattr(settings, "REPLACEMENTS", [])
+    route = respx.get(f"{TARGET}/default").respond(200, content="<html>example.com page</html>", headers={"content-type": "text/html"})
+
+    r = client.get("/default")
+    assert r.status_code == 200
+    # TestClient uses 'testserver' as the incoming host
+    assert "testserver page" in r.text
+
+
+@respx.mock
+def test_proxy_conflicting_replacement_overridden(monkeypatch):
+    """If a user-provided replacement tries to change the target host mapping, it should be
+    ignored in favor of the mandatory replacement to MY_HOST."""
+    monkeypatch.setattr(settings, "REPLACEMENTS", [{"from": settings.target_host, "to": "SOME_OTHER"}])
+    route = respx.get(f"{TARGET}/conflict").respond(200, content=f"<html>{settings.target_host} site</html>", headers={"content-type": "text/html"})
+
+    r = client.get("/conflict")
+    assert r.status_code == 200
+    assert "testserver site" in r.text
+
+

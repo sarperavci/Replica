@@ -5,6 +5,14 @@ import re
 
 from fastapi import Request, Response
 import httpx
+from httpx_curl_cffi import AsyncCurlTransport, CurlOpt
+
+
+def _create_async_client(impersonate: str) -> httpx.AsyncClient:
+    # Use curl options recommended for parallel requests
+    curl_options = {CurlOpt.FRESH_CONNECT: True}
+    transport = AsyncCurlTransport(impersonate=impersonate, default_headers=True, curl_options=curl_options)
+    return httpx.AsyncClient(transport=transport, follow_redirects=True, timeout=30.0)
 
 from .config import settings
 from .cache import Cache
@@ -35,7 +43,35 @@ async def proxy_request(request: Request, path: str) -> Response:
         target_url = f"{target_url}?{qs}"
 
     incoming_url = str(request.url)
-    incoming_host = request.url.hostname or settings.my_host
+
+    # Derive request-scoped origin & host from incoming request so we do not
+    # have to rely on a static environment variable. Prefer the Host header if
+    # provided (since it may include an explicit port), otherwise fall back to
+    # values present on request.url or settings.
+    host_header = request.headers.get("host", "")
+    if host_header:
+        # split on last ':' to support IPv6 addresses like [::1]:8080
+        host_part, sep, port_part = host_header.rpartition(":")
+        if sep and port_part.isdigit():
+            req_host = host_part or port_part  # if rpartition returned '' left-side
+            req_port = port_part
+        else:
+            req_host = host_header
+            req_port = None
+    else:
+        req_host = request.url.hostname or settings.my_host
+        req_port = request.url.port
+
+    scheme = request.url.scheme or "http"
+
+    if req_port:
+        incoming_origin = f"{scheme}://{req_host}:{req_port}"
+    elif request.url.port:
+        incoming_origin = f"{scheme}://{req_host}:{request.url.port}"
+    else:
+        incoming_origin = f"{scheme}://{req_host}"
+
+    incoming_host = req_host
 
     cache_key = f"{method}:{incoming_url}"
 
@@ -52,19 +88,27 @@ async def proxy_request(request: Request, path: str) -> Response:
     request_headers["host"] = settings.target_host
     request_headers.pop("accept-encoding", None)
 
-    request_headers = sanitize_request_headers(request_headers, settings.MY_ORIGIN, settings.my_host, settings.TARGET_ORIGIN)
+    # Sanitize headers using the dynamically derived origin/host for this request
+    # We provide an origin-like string for header sanitization (scheme://host[:port]).
+    my_origin_for_headers = f"{scheme}://{incoming_host}"
+    request_headers = sanitize_request_headers(request_headers, my_origin_for_headers, incoming_host, settings.TARGET_ORIGIN)
 
     body: Optional[bytes] = None
     if method not in ("GET", "HEAD"):
         body = await request.body()
 
+    # Choose impersonation profile based on incoming User-Agent
+    ua = request.headers.get("user-agent", "")
+    impersonate = "firefox" if "firefox" in ua.lower() else "chrome"
+
     try:
-        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+        async with _create_async_client(impersonate) as client:
             upstream = await client.request(method=method, url=target_url, headers=request_headers, content=body)
     except Exception as exc:  # pragma: no cover - network error
         return Response(content=f"Upstream fetch error: {exc}", status_code=502)
 
-    resp_headers = sanitize_response_headers(dict(upstream.headers), settings.TARGET_ORIGIN, settings.target_host, settings.MY_ORIGIN, settings.my_host)
+    # Sanitize response headers using the dynamically derived origin/host for this request
+    resp_headers = sanitize_response_headers(dict(upstream.headers), settings.TARGET_ORIGIN, settings.target_host, my_origin_for_headers, incoming_host)
     content_type = resp_headers.get("content-type", "")
 
     is_text = any(t in content_type.lower() for t in ("text", "json", "javascript", "xml", "html"))
@@ -85,7 +129,29 @@ async def proxy_request(request: Request, path: str) -> Response:
     except Exception:
         text = upstream.content.decode("utf-8", errors="replace")
 
-    text = perform_text_replacements(text, settings.REPLACEMENTS, incoming_host)
+    # Ensure target origin/host -> incoming origin/host replacement is always applied and overrides
+    # any user-specified replacement for the target. We filter out user-supplied replacements that
+    # reference the configured target to avoid them overriding the mandatory mapping, then append
+    # the mandatory mappings so they are applied last.
+    user_replacements = list(getattr(settings, "REPLACEMENTS", []) or [])
+    filtered_replacements = []
+    for r in user_replacements:
+        from_str = r.get("from") if isinstance(r, dict) else None
+        if not from_str:
+            continue
+        # If the user tries to target the configured target host/origin, ignore it so we enforce
+        # replacement unconditionally.
+        if settings.target_host.lower() in from_str.lower() or settings.TARGET_ORIGIN.lower() in from_str.lower():
+            continue
+        filtered_replacements.append(r)
+
+    # Append mandatory mappings: replace full origin first, then fallback to host-only for cases
+    # where the content references just the hostname without scheme.
+    filtered_replacements.append({"from": settings.TARGET_ORIGIN.rstrip("/"), "to": incoming_origin.rstrip("/")})
+    filtered_replacements.append({"from": settings.target_host, "to": f"{incoming_host}:{req_port}" if req_port else incoming_host})
+
+    # Perform replacements using the filtered list.
+    text = perform_text_replacements(text, filtered_replacements, incoming_host)
 
     if "html" in content_type.lower():
         # Optionally inject inline JS before the closing </body> tag.

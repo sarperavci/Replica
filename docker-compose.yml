@@ -8,6 +8,5 @@ services:
     env_file: .env
     environment:
       - TARGET_ORIGIN
-      - MY_ORIGIN
       - REPLACEMENTS
     restart: unless-stopped

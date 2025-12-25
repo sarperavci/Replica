@@ -9,7 +9,6 @@ from replica.config import Settings
 
 def test_validate_good_settings(monkeypatch):
     monkeypatch.setenv("TARGET_ORIGIN", "https://example.com")
-    monkeypatch.setenv("MY_ORIGIN", "http://localhost:8000")
     monkeypatch.setenv("REPLACEMENTS", json.dumps([{"from": "a", "to": "b"}]))
     monkeypatch.setenv("CACHE_TTL_STATIC", "86400")
     monkeypatch.setenv("CACHE_TTL_HTML", "300")
@@ -21,17 +20,14 @@ def test_validate_good_settings(monkeypatch):
 
 def test_validate_bad_urls(monkeypatch):
     monkeypatch.setenv("TARGET_ORIGIN", "not-a-url")
-    monkeypatch.setenv("MY_ORIGIN", "also-bad")
 
     settings = Settings()
     errs = validate_settings(settings)
     assert any("TARGET_ORIGIN" in e for e in errs)
-    assert any("MY_ORIGIN" in e for e in errs)
 
 
 def test_validate_replacements_non_json(monkeypatch):
     monkeypatch.setenv("TARGET_ORIGIN", "https://example.com")
-    monkeypatch.setenv("MY_ORIGIN", "http://localhost:8000")
     monkeypatch.setenv("REPLACEMENTS", "not json")
 
     settings = Settings()
@@ -41,7 +37,6 @@ def test_validate_replacements_non_json(monkeypatch):
 
 def test_validate_replacements_wrong_shape(monkeypatch):
     monkeypatch.setenv("TARGET_ORIGIN", "https://example.com")
-    monkeypatch.setenv("MY_ORIGIN", "http://localhost:8000")
     # not a list
     monkeypatch.setenv("REPLACEMENTS", json.dumps({"from": "a"}))
 

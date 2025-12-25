@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from .proxy import proxy_request
 
-app = FastAPI(title="Replica - Reverse Proxy")
+app = FastAPI(title="Replica - Reverse Proxy", redoc_url=None, docs_url=None, openapi_url=None)
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
 async def handle(request: Request, path: str):

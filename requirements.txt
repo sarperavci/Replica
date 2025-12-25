@@ -3,3 +3,4 @@ httpx
 cachetools
 pydantic
 uvicorn
+httpx-curl-cffi
