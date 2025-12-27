@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 from typing import Dict, Iterable, List
+from urllib.parse import urlparse
 
 
 def escape_regex(s: str) -> str:
@@ -20,7 +21,8 @@ def perform_text_replacements(text: str, replacements: Dict[str, str], incoming_
 
 
 def is_static_file(path: str, static_extensions: List[str]) -> bool:
-    return any(path.lower().endswith(ext) for ext in static_extensions)
+    parsed_path = urlparse(path).path
+    return any(parsed_path.lower().endswith(ext) for ext in static_extensions)
 
 
 def sanitize_request_headers(headers: Dict[str, str], my_origin: str, my_host: str, target_origin: str) -> Dict[str, str]:
