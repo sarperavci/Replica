@@ -20,7 +20,7 @@ def test_proxy_get_request_mocked():
 
 @respx.mock
 def test_proxy_replacement_and_cache_behavior(monkeypatch):
-    monkeypatch.setattr(settings, "REPLACEMENTS", [{"from": "example.com", "to": "MY_HOST"}])
+    monkeypatch.setattr(settings, "REPLACEMENTS", {"example.com": "MY_HOST"})
     route = respx.get(f"{TARGET}/cached").respond(200, content="<html>example.com content</html>", headers={"content-type": "text/html"})
 
     r1 = client.get("/cached")
@@ -73,7 +73,7 @@ def test_no_inject_when_unset(monkeypatch):
 def test_proxy_default_target_replacement(monkeypatch):
     """When REPLACEMENTS is empty, the proxy should still replace occurrences of the target host
     with the incoming host by default (mandatory behavior)."""
-    monkeypatch.setattr(settings, "REPLACEMENTS", [])
+    monkeypatch.setattr(settings, "REPLACEMENTS", {})
     route = respx.get(f"{TARGET}/default").respond(200, content="<html>example.com page</html>", headers={"content-type": "text/html"})
 
     r = client.get("/default")
@@ -86,7 +86,7 @@ def test_proxy_default_target_replacement(monkeypatch):
 def test_proxy_conflicting_replacement_overridden(monkeypatch):
     """If a user-provided replacement tries to change the target host mapping, it should be
     ignored in favor of the mandatory replacement to MY_HOST."""
-    monkeypatch.setattr(settings, "REPLACEMENTS", [{"from": settings.target_host, "to": "SOME_OTHER"}])
+    monkeypatch.setattr(settings, "REPLACEMENTS", {settings.target_host: "SOME_OTHER"})
     route = respx.get(f"{TARGET}/conflict").respond(200, content=f"<html>{settings.target_host} site</html>", headers={"content-type": "text/html"})
 
     r = client.get("/conflict")
