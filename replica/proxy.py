@@ -147,24 +147,23 @@ async def proxy_request(request: Request, path: str) -> Response:
     # any user-specified replacement for the target. We filter out user-supplied replacements that
     # reference the configured target to avoid them overriding the mandatory mapping, then append
     # the mandatory mappings so they are applied last.
-    user_replacements = list(getattr(settings, "REPLACEMENTS", []) or [])
-    filtered_replacements = []
-    for r in user_replacements:
-        from_str = r.get("from") if isinstance(r, dict) else None
-        if not from_str:
-            continue
+    user_replacements = getattr(settings, "REPLACEMENTS", {}) or {}
+    filtered_replacements = {}
+    
+    # Filter out user replacements that target the configured target host/origin
+    for from_str, to_str in user_replacements.items():
         # If the user tries to target the configured target host/origin, ignore it so we enforce
         # replacement unconditionally.
         if settings.target_host.lower() in from_str.lower() or settings.TARGET_ORIGIN.lower() in from_str.lower():
             continue
-        filtered_replacements.append(r)
+        filtered_replacements[from_str] = to_str
 
-    # Append mandatory mappings: replace full origin first, then fallback to host-only for cases
+    # Add mandatory mappings: replace full origin first, then fallback to host-only for cases
     # where the content references just the hostname without scheme.
-    filtered_replacements.append({"from": settings.TARGET_ORIGIN.rstrip("/"), "to": incoming_origin.rstrip("/")})
-    filtered_replacements.append({"from": settings.target_host, "to": f"{incoming_host}:{req_port}" if req_port else incoming_host})
+    filtered_replacements[settings.TARGET_ORIGIN.rstrip("/")] = incoming_origin.rstrip("/")
+    filtered_replacements[settings.target_host] = f"{incoming_host}:{req_port}" if req_port else incoming_host
 
-    # Perform replacements using the filtered list.
+    # Perform replacements using the filtered dict.
     text = perform_text_replacements(text, filtered_replacements, incoming_host)
 
     if "html" in content_type.lower():

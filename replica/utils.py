@@ -7,11 +7,9 @@ def escape_regex(s: str) -> str:
     return re.escape(s)
 
 
-def perform_text_replacements(text: str, replacements: Iterable[Dict[str, str]], incoming_host: str) -> str:
+def perform_text_replacements(text: str, replacements: Dict[str, str], incoming_host: str) -> str:
     result = text
-    for replacement in replacements:
-        from_str = replacement.get("from")
-        to_str = replacement.get("to")
+    for from_str, to_str in replacements.items():
         if not from_str or to_str is None:
             continue
         if to_str == "MY_HOST":
