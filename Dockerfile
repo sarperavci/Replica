@@ -22,6 +22,6 @@ ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
-# Entry point performs validations and starts the server
-# Run as module to support relative imports
-ENTRYPOINT ["python", "-m", "replica.entrypoint"]
+# Run the application directly using uvicorn.
+# Validation and diagnostics are performed on startup via FastAPI lifespan.
+CMD ["uvicorn", "replica.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

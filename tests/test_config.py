@@ -8,7 +8,7 @@ from replica.config import Settings
 
 def test_validate_good_settings(monkeypatch):
     monkeypatch.setenv("TARGET_ORIGIN", "https://example.com")
-    monkeypatch.setenv("REPLACEMENTS", json.dumps([{"from": "a", "to": "b"}]))
+    monkeypatch.setenv("REPLACEMENTS", json.dumps({"a": "b"}))
     monkeypatch.setenv("CACHE_TTL_STATIC", "86400")
     monkeypatch.setenv("CACHE_TTL_HTML", "300")
 
@@ -36,9 +36,9 @@ def test_validate_replacements_non_json(monkeypatch):
 
 def test_validate_replacements_wrong_shape(monkeypatch):
     monkeypatch.setenv("TARGET_ORIGIN", "https://example.com")
-    # not a list
-    monkeypatch.setenv("REPLACEMENTS", json.dumps({"from": "a"}))
+    # not a dict
+    monkeypatch.setenv("REPLACEMENTS", json.dumps(["a", "b"]))
 
     settings = Settings()
     errs = settings.validate()
-    assert any("REPLACEMENTS must be a JSON list" in e for e in errs)
+    assert any("REPLACEMENTS must be a JSON object" in e for e in errs)
