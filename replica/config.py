@@ -28,6 +28,7 @@ class Settings:
     CACHE_TTL_HTML: int
     INJECT_JS: str
     INJECT_JS_FILE: str
+    INJECT_JS_LOCATION: str  # "head" or "body"
 
     # Default origin used only as an internal fallback when a request does not provide
     # a Host header. This is not configurable via environment variables anymore.
@@ -79,6 +80,11 @@ class Settings:
             except Exception:
                 # Ignore failures and fall back to env var
                 self.INJECT_JS = os.getenv("INJECT_JS", "")
+
+        # Where to inject JS: "head" or "body" (default: "body")
+        self.INJECT_JS_LOCATION = os.getenv("INJECT_JS_LOCATION", "body").lower()
+        if self.INJECT_JS_LOCATION not in ("head", "body"):
+            self.INJECT_JS_LOCATION = "body"
 
     def validate(self) -> List[str]:
         errors: List[str] = []

@@ -167,13 +167,27 @@ async def proxy_request(request: Request, path: str) -> Response:
     text = perform_text_replacements(text, filtered_replacements, incoming_host)
 
     if "html" in content_type.lower():
-        # Optionally inject inline JS before the closing </body> tag.
+        # Optionally inject inline JS into <head> or <body> based on INJECT_JS_LOCATION.
         if getattr(settings, "INJECT_JS", ""):
             js_snippet = f"<script>{settings.INJECT_JS}</script>"
-            if re.search(r"</body>", text, flags=re.IGNORECASE):
-                text = re.sub(r"</body>", js_snippet + "</body>", text, flags=re.IGNORECASE)
+            inject_location = getattr(settings, "INJECT_JS_LOCATION", "body").lower()
+
+            if inject_location == "head":
+                # Inject before closing </head> tag
+                if re.search(r"</head>", text, flags=re.IGNORECASE):
+                    text = re.sub(r"</head>", js_snippet + "</head>", text, flags=re.IGNORECASE)
+                elif re.search(r"<head[^>]*>", text, flags=re.IGNORECASE):
+                    # If no closing </head> but opening <head> exists, insert after it
+                    text = re.sub(r"(<head[^>]*>)", r"\1" + js_snippet, text, flags=re.IGNORECASE)
+                else:
+                    # Fallback: prepend to content
+                    text = js_snippet + text
             else:
-                text = text + js_snippet
+                # Default: inject before closing </body> tag
+                if re.search(r"</body>", text, flags=re.IGNORECASE):
+                    text = re.sub(r"</body>", js_snippet + "</body>", text, flags=re.IGNORECASE)
+                else:
+                    text = text + js_snippet
 
         resp_headers["cache-control"] = "no-cache, no-store, must-revalidate"
         resp_headers["pragma"] = "no-cache"

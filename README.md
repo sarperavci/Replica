@@ -65,8 +65,9 @@ Replica is configured entirely via environment variables.
 | `REPLACEMENTS` | `[]` | JSON string of rules. Use `"to": "MY_HOST"` to dynamically map to your origin. |
 | `CACHE_TTL_STATIC` | (Internal Default) | Time-to-live (seconds) for static files. |
 | `CACHE_TTL_HTML` | (Internal Default) | Time-to-live (seconds) for HTML content. |
-| `INJECT_JS` | `None` | String of JavaScript to inject before `</body>`. |
+| `INJECT_JS` | `None` | String of JavaScript to inject into HTML pages. |
 | `INJECT_JS_FILE` | `None` | Path to a local JS file. If set, this overrides `INJECT_JS`. |
+| `INJECT_JS_LOCATION` | `body` | Where to inject JS: `head` (before `</head>`) or `body` (before `</body>`). |
 
 
 ## Local Development
