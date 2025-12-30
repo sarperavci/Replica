@@ -126,8 +126,8 @@ async def proxy_request(request: Request, path: str) -> Response:
     is_text = any(t in content_type.lower() for t in ("text", "json", "javascript", "xml", "html"))
 
     if is_static_file(target_path, settings.STATIC_EXTENSIONS) or not is_text:
-        # static / binary -> cache server-side
-        resp_headers.pop("cache-control", None)
+        # static / binary -> cache server-side and on Cloudflare CDN
+        resp_headers["cache-control"] = "public, max-age=3600"
         resp_headers.pop("pragma", None)
         resp_headers.pop("expires", None)
         resp_headers["x-cache"] = "MISS"
@@ -189,7 +189,7 @@ async def proxy_request(request: Request, path: str) -> Response:
                 else:
                     text = text + js_snippet
 
-        resp_headers.pop("cache-control", None)
+        resp_headers["cache-control"] = "public, max-age=3600"
         resp_headers.pop("pragma", None)
         resp_headers.pop("expires", None)
         resp_headers["x-cache"] = "MISS"
