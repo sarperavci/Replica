@@ -133,7 +133,7 @@ async def proxy_request(request: Request, path: str) -> Response:
         
         # Filter out Cloudflare cookies from set-cookie header
         if "set-cookie" in resp_headers:
-            cookies = resp_headers["set-cookie"].split(", ")
+            cookies = re.split(r',\s+(?=[^=\s]+=)', resp_headers["set-cookie"])
             filtered_cookies = [
                 c for c in cookies
                 if not any(c.startswith(f"{name}=") for name in ["__cf_bm", "_cfuvid", "cf_clearance"])
@@ -208,7 +208,9 @@ async def proxy_request(request: Request, path: str) -> Response:
         
         # Filter out Cloudflare cookies from set-cookie header
         if "set-cookie" in resp_headers:
-            cookies = resp_headers["set-cookie"].split(", ")
+            # Split on ", " only when followed by a cookie name pattern (word=)
+            # This avoids splitting on commas within expires dates like "Tue, 30-Dec-25"
+            cookies = re.split(r',\s+(?=[^=\s]+=)', resp_headers["set-cookie"])
             filtered_cookies = [
                 c for c in cookies
                 if not any(c.startswith(f"{name}=") for name in ["__cf_bm", "_cfuvid", "cf_clearance"])
