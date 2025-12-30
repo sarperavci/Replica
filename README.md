@@ -100,15 +100,14 @@ Ensure the variables (especially `TARGET_ORIGIN`) are set correctly for your loc
 
 ### 3. Running the Server
 
-**Standard Run:**
-Since `replica` is a package, run it as a module:
+Run the server with Uvicorn:
 
 ```bash
-python -m replica
+uvicorn replica.main:app --host 0.0.0.0 --port 8000
 ```
 
 **Development Mode (Hot Reload):**
-For active development, use Uvicorn directly to reload on code changes:
+For active development, use the `--reload` flag to automatically reload on code changes:
 
 ```bash
 uvicorn replica.main:app --reload --host 127.0.0.1 --port 8000
