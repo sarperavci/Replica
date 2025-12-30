@@ -127,9 +127,9 @@ async def proxy_request(request: Request, path: str) -> Response:
 
     if is_static_file(target_path, settings.STATIC_EXTENSIONS) or not is_text:
         # static / binary -> cache server-side
-        resp_headers["cache-control"] = "no-cache, no-store, must-revalidate"
-        resp_headers["pragma"] = "no-cache"
-        resp_headers["expires"] = "0"
+        del resp_headers["cache-control"] #= "no-cache, no-store, must-revalidate"
+        del resp_headers["pragma"] #= "no-cache"
+        del resp_headers["expires"] #= "0"
         resp_headers["x-cache"] = "MISS"
         body_bytes = upstream.content
 
@@ -189,9 +189,9 @@ async def proxy_request(request: Request, path: str) -> Response:
                 else:
                     text = text + js_snippet
 
-        resp_headers["cache-control"] = "no-cache, no-store, must-revalidate"
-        resp_headers["pragma"] = "no-cache"
-        resp_headers["expires"] = "0"
+        del resp_headers["cache-control"] #= "no-cache, no-store, must-revalidate"
+        del resp_headers["pragma"] #= "no-cache"
+        del resp_headers["expires"] #= "0"
         resp_headers["x-cache"] = "MISS"
         body_bytes = text.encode("utf-8")
         if 200 <= upstream.status_code < 300 and method == "GET":
