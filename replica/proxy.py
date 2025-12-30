@@ -130,6 +130,19 @@ async def proxy_request(request: Request, path: str) -> Response:
         resp_headers["cache-control"] = "public, max-age=3600"
         resp_headers.pop("pragma", None)
         resp_headers.pop("expires", None)
+        
+        # Filter out Cloudflare cookies from set-cookie header
+        if "set-cookie" in resp_headers:
+            cookies = resp_headers["set-cookie"].split(", ")
+            filtered_cookies = [
+                c for c in cookies
+                if not any(c.startswith(f"{name}=") for name in ["__cf_bm", "_cfuvid", "cf_clearance"])
+            ]
+            if filtered_cookies:
+                resp_headers["set-cookie"] = ", ".join(filtered_cookies)
+            else:
+                resp_headers.pop("set-cookie", None)
+        
         resp_headers["x-cache"] = "MISS"
         body_bytes = upstream.content
 
@@ -192,6 +205,19 @@ async def proxy_request(request: Request, path: str) -> Response:
         resp_headers["cache-control"] = "public, max-age=3600"
         resp_headers.pop("pragma", None)
         resp_headers.pop("expires", None)
+        
+        # Filter out Cloudflare cookies from set-cookie header
+        if "set-cookie" in resp_headers:
+            cookies = resp_headers["set-cookie"].split(", ")
+            filtered_cookies = [
+                c for c in cookies
+                if not any(c.startswith(f"{name}=") for name in ["__cf_bm", "_cfuvid", "cf_clearance"])
+            ]
+            if filtered_cookies:
+                resp_headers["set-cookie"] = ", ".join(filtered_cookies)
+            else:
+                resp_headers.pop("set-cookie", None)
+        
         resp_headers["x-cache"] = "MISS"
         body_bytes = text.encode("utf-8")
         if 200 <= upstream.status_code < 300 and method == "GET":
