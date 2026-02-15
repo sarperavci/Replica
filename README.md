@@ -6,13 +6,6 @@
 
 Replica is a lightweight, Python-based reverse proxy. It mirrors content from a target origin, sanitizes headers to keep downstream proxies happy, and handles on-the-fly text replacement. It includes an in-memory TTL cache for static assets and HTML to ensure high performance.
 
-## Live Example
-
-Check out a live mirror of Stack Overflow running on Replica:  
-**[notstackoverflow.hackmap.win](https://notstackoverflow.hackmap.win/)**
-
-This demonstrates Replica's ability to seamlessly proxy and rewrite content from any website while maintaining full functionality.
-
 ## Features
 
 *   **Smart Proxying:** Forward requests to any target origin with minimal overhead.
