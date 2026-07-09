@@ -1,27 +1,23 @@
-FROM python:3.10-alpine
+FROM python:3.10-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# install build/runtime deps needed for some packages on Alpine
-RUN apk add --no-cache --virtual .build-deps build-base libffi-dev openssl-dev \
-    && apk add --no-cache ca-certificates
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt \
-    && apk del .build-deps
+RUN pip install --no-cache-dir -r requirements.txt
 
 # copy package source
 COPY replica/ ./replica/
-COPY .env.example .env
 
-# Ensure the app package is importable
 ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
-# Run the application directly using uvicorn.
-# Validation and diagnostics are performed on startup via FastAPI lifespan.
+# Validation and diagnostics run on startup via FastAPI lifespan.
 CMD ["uvicorn", "replica.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

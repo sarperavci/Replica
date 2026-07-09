@@ -1,6 +1,5 @@
 fastapi
 httpx
-cachetools
-pydantic
 uvicorn
 httpx-curl-cffi
+python-dotenv

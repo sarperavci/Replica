@@ -1,12 +1,7 @@
-# FastAPI
-httpx
+-r requirements.txt
 pytest
 pytest-asyncio
-cachetools
-pydantic
-uvicorn
 respx
-httpx-curl-cffi
 mypy
 black
 flake8

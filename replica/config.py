@@ -5,6 +5,13 @@ import json
 import logging
 from urllib.parse import urlparse
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()  # populate os.environ from a local .env if present (no-op under Docker)
+except ImportError:
+    pass
+
 logger = logging.getLogger("replica.config")
 
 def _is_valid_url(value: str) -> bool:
@@ -38,13 +45,14 @@ class Settings:
         self.TARGET_ORIGIN = os.getenv("TARGET_ORIGIN", "https://example.com")
 
         raw = os.getenv("REPLACEMENTS", "")
+        self.REPLACEMENTS = {}
         if raw:
             try:
-                self.REPLACEMENTS = json.loads(raw)
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict):
+                    self.REPLACEMENTS = parsed
             except Exception:
-                self.REPLACEMENTS = []
-        else:
-            self.REPLACEMENTS = []
+                self.REPLACEMENTS = {}
 
         self.STATIC_EXTENSIONS = [
             ".png",
@@ -108,15 +116,13 @@ class Settings:
                 errors.append("REPLACEMENTS must be valid JSON")
 
         # TTLs
-        try:
-            int(os.getenv("CACHE_TTL_STATIC", "86400"))
-        except Exception:
-            errors.append("CACHE_TTL_STATIC must be an integer")
-
-        try:
-            int(os.getenv("CACHE_TTL_HTML", "300"))
-        except Exception:
-            errors.append("CACHE_TTL_HTML must be an integer")
+        for name in ("CACHE_TTL_STATIC", "CACHE_TTL_HTML"):
+            raw_ttl = os.getenv(name, "86400" if name == "CACHE_TTL_STATIC" else "300")
+            try:
+                if int(raw_ttl) < 0:
+                    errors.append(f"{name} must be a non-negative integer")
+            except Exception:
+                errors.append(f"{name} must be an integer")
 
         return errors
 

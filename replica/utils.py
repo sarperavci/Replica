@@ -16,8 +16,29 @@ def perform_text_replacements(text: str, replacements: Dict[str, str], incoming_
         if to_str == "MY_HOST":
             to_str = incoming_host
         pat = re.compile(escape_regex(from_str), re.IGNORECASE)
-        result = pat.sub(to_str, result)
+        result = pat.sub(lambda _m, r=to_str: r, result)  # literal replacement, no \1/\g backrefs
     return result
+
+
+CF_COOKIE_NAMES = ("__cf_bm", "_cfuvid", "cf_clearance")
+
+
+def is_cloudflare_cookie(cookie: str) -> bool:
+    return any(cookie.lstrip().startswith(f"{name}=") for name in CF_COOKIE_NAMES)
+
+
+def rewrite_set_cookie(value: str, target_origin: str, target_host: str, my_origin: str, my_host: str) -> str:
+    """Rewrite a single Set-Cookie value: target origin/host -> our origin/host, incl. Domain=."""
+    value = re.sub(escape_regex(target_origin), lambda _m: my_origin, value, flags=re.IGNORECASE)
+    value = re.sub(escape_regex(target_host), lambda _m: my_host, value, flags=re.IGNORECASE)
+    if "Domain=" in value:
+        value = re.sub(
+            f"Domain={escape_regex(target_host)}",
+            lambda _m: f"Domain={my_host}",
+            value,
+            flags=re.IGNORECASE,
+        )
+    return value
 
 
 def is_static_file(path: str, static_extensions: List[str]) -> bool:
@@ -45,8 +66,9 @@ def sanitize_request_headers(headers: Dict[str, str], my_origin: str, my_host: s
         if any(p.match(name) for p in remove_patterns):
             continue
         if isinstance(value, str):
-            value = my_origin_re.sub(target_origin, value)
-            value = my_host_re.sub(target_origin.split("//")[-1].split("/")[0], value)
+            value = my_origin_re.sub(lambda _m: target_origin, value)
+            target_netloc = target_origin.split("//")[-1].split("/")[0]
+            value = my_host_re.sub(lambda _m: target_netloc, value)
         sanitized[name] = value
     return sanitized
 
@@ -71,10 +93,15 @@ def sanitize_response_headers(headers: Dict[str, str], target_origin: str, targe
         if any(p.match(name) for p in remove_patterns):
             continue
         if isinstance(value, str):
-            value = target_origin_re.sub(my_origin, value)
-            value = target_host_re.sub(my_host, value)
+            value = target_origin_re.sub(lambda _m: my_origin, value)
+            value = target_host_re.sub(lambda _m: my_host, value)
             if name.lower() == "set-cookie" and "Domain=" in value:
-                value = re.sub(f"Domain={escape_regex(target_host)}", f"Domain={my_host}", value, flags=re.IGNORECASE)
+                value = re.sub(
+                    f"Domain={escape_regex(target_host)}",
+                    lambda _m: f"Domain={my_host}",
+                    value,
+                    flags=re.IGNORECASE,
+                )
         sanitized[name] = value
 
     # Remove or adjust headers that break proxies

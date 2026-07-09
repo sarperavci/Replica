@@ -2,7 +2,7 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-from .proxy import proxy_request
+from .proxy import proxy_request, startup_clients, shutdown_clients
 from .config import settings
 
 # Configure logging
@@ -20,7 +20,11 @@ async def lifespan(app: FastAPI):
         sys.exit(2)
 
     settings.print_diagnostics()
-    yield
+    await startup_clients()
+    try:
+        yield
+    finally:
+        await shutdown_clients()
 
 app = FastAPI(
     title="Replica - Reverse Proxy",
